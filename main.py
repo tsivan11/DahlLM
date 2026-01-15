@@ -109,16 +109,24 @@ def main():
             print("Please enter your age in numbers!")
     
     
+    forbidden_phrases = [
+        "previous instructions", "previous instructions", "jailbreak", "bypass", "as an ai", "as a language model",
+        "simulate", "roleplay", "act as", "do anything now", "unfiltered", "uncensored", "explicit", "inappropriate", "illegal",
+        "harmful", "violent", "kill", "suicide", "self-harm", "sex", "sexual", "drugs", "alcohol", "abuse", "torture", "terrorist",
+        "bomb", "attack", "weapon", "crime", "commit murder", "commit a crime", "escape", "hack", "exploit", "root access"
+    ]
     while True:
         user_input_request = input("What kind of story do you want to hear? ")
-        if user_input_request.strip():
-            break
-        else:
+        if not user_input_request.strip():
             print("Please tell me what kind of story you'd like!")
-    
+            continue
+        lowered = user_input_request.lower()
+        if any(phrase in lowered for phrase in forbidden_phrases):
+            print("Sorry, I can't tell a story about that. Please ask for a different kind of story!")
+            continue
+        break
     print("\nLet me check my library. I think I have just the story for you...")
     response = story_pipeline(age, user_input_request)
-    
     print("\n" + "="*70)
     print(response)
     print("="*70)
