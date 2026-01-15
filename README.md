@@ -48,3 +48,17 @@ No more than 2-3 hours
 Sure
 - How long should the story be?
 You decide
+
+
+
+## References and Tools Used
+1. Chip Huyen's AI Engineering, Chapter 5: Prompt Engineering
+2. GitHub Co-pilot, mainly for boilerplate and for augmenting existing pieces
+
+
+
+
+
+
+
+
