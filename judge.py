@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from openai import OpenAI
 from dotenv import load_dotenv
+from prompts import get_judge_prompt
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -21,50 +22,7 @@ class JudgeResult:
 
 def judge_story(story: str, age: int) -> JudgeResult:
 
-    
-    judge_prompt = f"""You are an expert children's story editor. 
-        Your task is to evaluate a bedtime story for a {age}-year-old child.
-
-        EVALUATION CRITERIA:
-
-        1. SAFETY CHECK (Very important: BINARY PASS/FAIL):
-        - No violence, blood, death, scary imagery, or nightmares
-        - No complex fears (abandonment, abuse, existential themes)
-        - emotionally safe with gentle tension only
-        - Only Age-appropriate themes for {age} year olds
-        - If ANY safety concern exists, mark as FAILED
-
-        2. STRUCTURE (0-10):
-        - Clear 3 act structure (beginning, middle, end)
-        - Well-balanced act lengths
-        - Proper story arc with setup, challenge, resolution
-
-        3. PACING (0-10):
-        - Not rushed, especially the ending
-        - Good flow and rhythm
-
-        4. MORAL (0-10):
-        - Clear positive lesson
-        - Emerges naturally from the story
-
-        5. ENGAGEMENT (0-10):
-        - Vivid descriptions and imagery
-        - Interesting characters
-        - Captures imagination of a child
-
-        STORY TO EVALUATE:
-        {story}
-
-        Provide your evaluation in the following JSON format ONLY (no other text):
-        {{
-            "safety_passed": true/false,
-            "structure_score": 0-10,
-            "pacing_score": 0-10,
-            "moral_score": 0-10,
-            "engagement_score": 0-10,
-            "feedback": "Specific, actionable feedback for improvement. If scores are low, explain why and how to fix. Be constructive and specific."
-        }}
-        """
+    judge_prompt = get_judge_prompt().format(age=age, story=story)
 
     resp = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -72,7 +30,6 @@ def judge_story(story: str, age: int) -> JudgeResult:
         temperature=0.3,
         max_tokens=1000
     )
-    
     
     response_text = resp.choices[0].message.content.strip()
     try:

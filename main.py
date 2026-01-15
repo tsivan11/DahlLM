@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 from judge import JudgeResult, judge_story
+from prompts import get_storyteller_prompts
 
 # load theAPI key
 load_dotenv()
@@ -11,7 +12,7 @@ Before submitting the assignment, describe here in a few sentences what you woul
 
 A. If I had more time, a few changes I'd consider adding are:
 1. The ability to pick from a variety of author writing styles 
-(e.g. stories written in the style of this application's namesake Roald Dahl, or maybe Dr. Seuss)
+(e.g. stories written in the style of this application's namesake Roald Dahl, or maybe Dr. Seuss. Could use some few-shot examples for that purpose.)
 2. I'd spend a lot more time testing and versioning prompts.
 3. Langchain for better orchestration, retiries, complexity?
 4. A means to store stories that have already been written, if the user wants to revist them.
@@ -22,49 +23,20 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) # initializing it once
 
 def write_story(age: str, story_request: str, previous_story: str = None, judge_feedback: str = None, max_tokens=4000, temperature=0.5) -> str:
 
-    system_prompt = f"""You are DahlLM, a friendly and imaginative AI storyteller designed to create engaging and **age-appropriate** bedtime stories for children aged 5 to 10. 
-    Your Goals:
-    1. Write a warm, imaginative, calming bedtime story.
-    2. Whatever the story topic is, ensure it is **age-appropriate** and emotionally safe with gentle tension and positive resolutions.
-    3. Use simple, clear language that  is easy to understand but also rich in imagination.
-    4. Keep the story length suitable for a bedtime story, and have distinct story arcs with a beginning, middle, and end
-
-    Requirements:
-    1. Protagonist is exactly {age} years old.
-    2. The protagonist should have a name.
-    3. The visual scenes should be clearly described.
-    4. Include friendly supporting characters.
-    5. The story should have a positive moral or lesson. The moral should be clear from the protagonist's journey. Do not state that it is a moral, explicitly.
-    6. Avoid any content that could be inappropriate for children in this age group..
-    7. Try to keep the different story arcs balanced in length. Do not rush the ending.
-    8. The story length should be around 800-1200 words.
-    9. There should be some challenge to overcome, but nothing too intense.
-
-    Format:
-    - Tale: [Story Title]
-    - Begin with: Once upon a time...
-    - Separate the arcs with paragraph breaks. Don't explicitly label the arcs.
-    - Conclude with a pithy moral, and wish the child goodnight at the end. Do not mention "moral" explicitly.
-    """
-
+    prompts = get_storyteller_prompts()
+    system_prompt = prompts["system"].format(age=age)
     
     if previous_story and judge_feedback:
-        user_prompt = f"""
-    You previously wrote this story:
-    {previous_story}
-    An editor has provided this feedback:
-    {judge_feedback}
-    
-    Please revise the story based on this feedback while maintaining the core request: {story_request}
-    Follow the system instructions carefully. Only return the improved story for the child to read.
-    """
-        
-
+        user_prompt = prompts["user_revision"].format(
+            previous_story=previous_story,
+            judge_feedback=judge_feedback,
+            story_request=story_request
+        )
     else:
-        user_prompt = f"""
-    Narrate a bedtime story for a {age} year old child. The story should be about: {story_request}. If the topic is a typo, make your best guess at what the child meant.
-    Follow the system instructions carefully. Before narration, plan the 3-act structure carefully. Do NOT display the plan, only the story for the child to read.
-    """
+        user_prompt = prompts["user_initial"].format(
+            age=age,
+            story_request=story_request
+        )
 
     resp = client.chat.completions.create(
         model="gpt-3.5-turbo",
@@ -117,7 +89,7 @@ def story_pipeline(age: int, story_request: str, quality_threshold: float = 7.5,
         return best_story
     else:
         print("\n Unable to generate safe story. Please try a different request.")
-        return "I wasn't able to find a suitable story for that request. Please try again with a different idea!"
+        return "I wasn't able to create a suitable story for that request. Please try again with a different idea!"
 
 
 def main():
